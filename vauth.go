@@ -1,4 +1,4 @@
-package vauth
+package main
 
 import (
 	"bytes"
@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// VAuth represents the Velvetauth client in Go.
 type VAuth struct {
 	httpClient *http.Client
 	apiBaseURL string
@@ -15,6 +16,7 @@ type VAuth struct {
 	version    string
 	hwid       string
 }
+
 
 func NewVAuth(appID, secret, version string) *VAuth {
 	return &VAuth{
@@ -26,6 +28,7 @@ func NewVAuth(appID, secret, version string) *VAuth {
 		hwid:       "<get_hwid_here>",
 	}
 }
+
 
 func (va *VAuth) Post(endpoint string, data interface{}) (*http.Response, error) {
 	jsonData, err := json.Marshal(data)
@@ -41,6 +44,7 @@ func (va *VAuth) Post(endpoint string, data interface{}) (*http.Response, error)
 
 	return va.httpClient.Do(req)
 }
+
 
 func (va *VAuth) Init() (bool, error) {
 	requestData := map[string]interface{}{
@@ -69,11 +73,13 @@ func (va *VAuth) Init() (bool, error) {
 	if jsonResponse != nil && jsonResponse["error"] != nil && jsonResponse["error"].(string) == "wrong_version" {
 		downloadURL := jsonResponse["download_url"].(string)
 		fmt.Println("Your are using an outdated version of the program. Redirecting to update URL:", downloadURL)
+
 		return false, nil
 	}
 
 	return true, nil
 }
+
 
 func (va *VAuth) RegisterLicense(username, password, licenseKey, email string) (bool, error) {
 	requestData := map[string]interface{}{
@@ -103,6 +109,7 @@ func (va *VAuth) RegisterLicense(username, password, licenseKey, email string) (
 	}
 
 	if jsonResponse != nil && jsonResponse["message"] != nil && jsonResponse["message"].(string) == "License registered successfully" {
+
 		return true, nil
 	}
 
@@ -112,4 +119,50 @@ func (va *VAuth) RegisterLicense(username, password, licenseKey, email string) (
 	}
 
 	return false, fmt.Errorf("Registration failed: %s", errorMessage)
+}
+
+func main() {
+	appID := "app id"
+	secret := "secret"
+	version := "1.0"
+
+	vAuth := NewVAuth(appID, secret, version)
+
+	initSuccess, err := vAuth.Init()
+	if err != nil {
+		fmt.Println("Initialization error:", err)
+		return
+	}
+
+	if initSuccess {
+	
+
+		var username, password, licenseKey, email string
+
+		fmt.Print("\nEnter Username: ")
+		fmt.Scanln(&username)
+
+		fmt.Print("Enter Password: ")
+		fmt.Scanln(&password)
+
+		fmt.Print("Enter License Key: ")
+		fmt.Scanln(&licenseKey)
+
+		fmt.Print("Enter Email: ")
+		fmt.Scanln(&email)
+
+		registerSuccess, regErr := vAuth.RegisterLicense(username, password, licenseKey, email)
+		if regErr != nil {
+			fmt.Println("Registration error:", regErr)
+			return
+		}
+
+		if registerSuccess {
+			fmt.Println("License registered successfully")
+		} else {
+			fmt.Println("License registration failed")
+		}
+	} else {
+		fmt.Println("Initialization failed")
+	}
 }
